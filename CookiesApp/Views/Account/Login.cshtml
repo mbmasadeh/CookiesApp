@@ -1,0 +1,13 @@
+﻿@model CookiesApp.ViewModels.LoginViewModel
+<div asp-validation-summary="All"></div>
+<form asp-action="Login" method="post">
+    <label asp-for="Email"></label>
+    <input name="Email" />
+    <br />
+    <label asp-for="Password"></label>
+    <input name="Password" type="password" />
+    <br />
+    <input type="checkbox" asp-for="RememberMe" />تذكرني
+    <br />
+    <input type="submit" class="button" value="دخول" />
+</form>
