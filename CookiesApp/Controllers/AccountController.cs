@@ -24,7 +24,7 @@ namespace CookiesApp.Controllers
 
         [HttpPost]
         [AllowAnonymous]
-        public IActionResult Login(LoginViewModel model, string returnUrl = null)
+        public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null)
         {
             //Get the inserted Credentials
 
@@ -32,6 +32,13 @@ namespace CookiesApp.Controllers
             if (model.Email == LogModel.UserName)
             {
                 //Good entry, take the next step
+                //Lets carry out some info
+                List<Claim> claims = new List<Claim>();
+                claims.Add(new Claim(ClaimTypes.Name, model.Email));
+                ClaimsIdentity identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                AuthenticationProperties authProperties = new AuthenticationProperties { IsPersistent = model.RememberMe };
+                await HttpContext.SignInAsync(_externalCookieScheme, new ClaimsPrincipal(identity), authProperties);
+
                 return RedirectToAction("Index", "Home");
             }
             else
@@ -45,9 +52,11 @@ namespace CookiesApp.Controllers
         {
             return View();
         }
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
-            return View();
+            await HttpContext.SignOutAsync(_externalCookieScheme);
+            string info = string.Format("Completed by {0} on {1}/ {2}", User.Identity.Name, this.ControllerContext.RouteData.Values["controller"].ToString(), this.ControllerContext.RouteData.Values["action"].ToString());
+            return RedirectToAction("Login");
         }
     }
 }
