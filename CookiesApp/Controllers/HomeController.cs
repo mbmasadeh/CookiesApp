@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CookiesApp.ViewModels
+namespace CookiesApp.Controllers
 {
     [Authorize]
     public class HomeController : Controller
