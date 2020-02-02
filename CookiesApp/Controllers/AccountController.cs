@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using CookiesApp.Models;
 using CookiesApp.Tools;
 using CookiesApp.ViewModels;
 using Microsoft.AspNetCore.Authentication;
@@ -25,41 +26,37 @@ namespace CookiesApp.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null)
         {
-            LdapManager ldapManager = new LdapManager();
-            var ldabUser = ldapManager.GetUserIdentity(model.Email.Split('@').First());
-            if (ldabUser == null)
+            //Get the inserted Credentials
+
+            LoginModel LogModel = new LoginModel();
+            if (model.Email == LogModel.UserName)
             {
-                ModelState.AddModelError(string.Empty, "عفوا. حدث خطأ أثناء التسجيل");
-                return View(model);
+                //Good entry, take the next step
+                //Lets carry out some info
+                List<Claim> claims = new List<Claim>();
+                claims.Add(new Claim(ClaimTypes.Name, model.Email));
+                ClaimsIdentity identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                AuthenticationProperties authProperties = new AuthenticationProperties { IsPersistent = model.RememberMe };
+                await HttpContext.SignInAsync(_externalCookieScheme, new ClaimsPrincipal(identity), authProperties);
+
+                return RedirectToAction("Index", "Home");
             }
-            if (ModelState.IsValid)
+            else
             {
-                int employeeID = int.Parse(ldabUser.EmployeeId);
-                if (employeeID == 0)
-                {
-                    ModelState.AddModelError(string.Empty, "عفوا. ليس لديك صلاحية الوصول");
-                    return View(model);
-                }
-                else
-                {
-                    List<Claim> Claims = new List<Claim>();
-                    //Claims.Add(new Claim(ClaimTypes.Name, ldabUser.Name));
-                    Claims.Add(new Claim(ClaimTypes.Email, ldabUser.EmailAddress));
-                    Claims.Add(new Claim(ClaimTypes.GivenName, ldabUser.Description));
-                    ClaimsIdentity identity = new ClaimsIdentity(Claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                    AuthenticationProperties authProperties = new AuthenticationProperties { IsPersistent = model.RememberMe };
-                    await HttpContext.SignInAsync(_externalCookieScheme, new ClaimsPrincipal(identity), authProperties);
-                }
+                ModelState.AddModelError(string.Empty, "Wrong Credentials");
+                return View();
             }
-            return RedirectToAction("Index", "Home");
+
         }
         public IActionResult AccessDenied()
         {
             return View();
         }
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
-            return View();
+            await HttpContext.SignOutAsync(_externalCookieScheme);
+            string info = string.Format("Completed by {0} on {1}/ {2}", User.Identity.Name, this.ControllerContext.RouteData.Values["controller"].ToString(), this.ControllerContext.RouteData.Values["action"].ToString());
+            return RedirectToAction("Login");
         }
     }
 }
